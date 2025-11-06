@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ブラウザ内で画像を一括リサイズ・圧縮。サーバー送信なし、完全端末内処理。">
+    <title>画像一括リサイズ＆容量最適化（端末内処理）</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>📸 画像一括リサイズ＆容量最適化</h1>
+        <p class="subtitle">このツールはブラウザ内だけで画像を処理します。サーバーに画像は送信されません。</p>
+    </header>
+
+    <main>
+        <!-- アップロードブロック -->
+        <section class="upload-section">
+            <div class="dropzone" id="dropzone">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                </svg>
+                <p>ここに画像をドラッグ＆ドロップ</p>
+                <p class="or-text">または</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png" multiple hidden>
+            <button class="btn btn-primary btn-large" id="selectBtn">📁 画像を選択</button>
+            <div class="file-info" id="fileInfo">
+                <p>選択済み: <strong id="fileCount">0</strong>枚 / 合計: <strong id="totalSize">0 MB</strong></p>
+            </div>
+            <div class="notice">
+                <strong>⚠️ 制限事項</strong>
+                <ul>
+                    <li>1回の処理: 最大50枚、合計300MBまで</li>
+                    <li>対応形式: JPEG（.jpg/.jpeg）、PNG（.png）</li>
+                    <li>大きな画像は端末性能により失敗することがあります</li>
+                    <li>処理中はブラウザを閉じないでください</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 設定ブロック -->
+        <section class="settings-section">
+            <h2>⚙️ 変換設定</h2>
+            
+            <div class="setting-group">
+                <label>長辺サイズ（px）</label>
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-size="1600">1600</button>
+                    <button class="preset-btn active" data-size="1280">1280</button>
+                    <button class="preset-btn" data-size="1024">1024</button>
+                    <button class="preset-btn" data-size="800">800</button>
+                </div>
+                <input type="number" id="customSize" class="input-field" placeholder="または任意の値を入力" min="100" max="10000">
+            </div>
+
+            <div class="setting-group">
+                <label>出力フォーマット</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="format" value="image/jpeg" checked>
+                        <span>JPEG</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="format" value="image/png">
+                        <span>PNG</span>
+                    </label>
+                    <label class="radio-label" id="webpOption">
+                        <input type="radio" name="format" value="image/webp">
+                        <span>WebP</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>画質 <span id="qualityValue">0.8</span></label>
+                <input type="range" id="qualitySlider" min="0.6" max="0.9" step="0.05" value="0.8" class="slider">
+                <div class="slider-labels">
+                    <span>低品質（軽い）</span>
+                    <span>高品質（重い）</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="noUpscale" checked>
+                    <span>既存より大きくしない（拡大禁止）</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- 実行・進行ブロック -->
+        <section class="process-section">
+            <button class="btn btn-success btn-large" id="processBtn" disabled>
+                🚀 一括変換を実行
+            </button>
+            
+            <div class="progress-container" id="progressContainer" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">処理中: 0 / 0</p>
+                <button class="btn btn-danger" id="cancelBtn">⏹ 中止</button>
+            </div>
+        </section>
+
+        <!-- 出力ブロック -->
+        <section class="output-section" id="outputSection" style="display: none;">
+            <h2>✅ 処理完了</h2>
+            <div class="summary" id="summary"></div>
+            <button class="btn btn-primary btn-large" id="downloadBtn">
+                💾 ZIPをダウンロード
+            </button>
+            <div class="error-list" id="errorList" style="display: none;">
+                <details>
+                    <summary>⚠️ エラー詳細を表示</summary>
+                    <ul id="errorItems"></ul>
+                </details>
+            </div>
+            <button class="btn btn-secondary" id="resetBtn">🔄 最初からやり直す</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2025 画像一括リサイズツール | 完全端末内処理 | GitHub Pages対応</p>
+    </footer>
+
+    <!-- ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
+    <script src="main.js" defer></script>
+</body>
+</html>
