@@ -421,3 +421,123 @@ footer {
 section {
     animation: fadeIn 0.3s ease-out;
 }
+
+/* プレビューセクション */
+.preview-section {
+    margin-top: 16px;
+}
+
+.preview-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    border-radius: 8px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.summary-item .label {
+    font-size: 0.85rem;
+    color: var(--secondary);
+    margin-bottom: 4px;
+}
+
+.summary-item .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.summary-item .value.highlight {
+    color: #2196F3;
+}
+
+.summary-item .value.success {
+    color: var(--primary);
+}
+
+.preview-table-container {
+    overflow-x: auto;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.9rem;
+}
+
+.preview-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.preview-table th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.preview-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+
+.preview-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.preview-table td {
+    padding: 12px 8px;
+}
+
+.preview-table .file-name {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-table .size-before {
+    color: var(--secondary);
+}
+
+.preview-table .size-after {
+    color: #2196F3;
+    font-weight: 600;
+}
+
+.preview-table .reduction {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.preview-table .reduction.negative {
+    color: var(--danger);
+}
+
+/* モバイル対応 */
+@media (max-width: 480px) {
+    .preview-table {
+        font-size: 0.75rem;
+    }
+    
+    .preview-table th,
+    .preview-table td {
+        padding: 8px 4px;
+    }
+    
+    .preview-table .file-name {
+        max-width: 100px;
+    }
+}

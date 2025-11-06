@@ -3,6 +3,7 @@ let selectedFiles = [];
 let processedBlobs = [];
 let isCancelled = false;
 let currentSize = 1280;
+let previewData = [];
 
 // DOM要素
 const dropzone = document.getElementById('dropzone');
@@ -99,6 +100,35 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // リセット
     resetBtn.addEventListener('click', resetAll);
+
+    // プレビュー更新ボタン
+    const updatePreviewBtn = document.getElementById('updatePreviewBtn');
+    updatePreviewBtn.addEventListener('click', updatePreview);
+    
+    // 画質スライダー変更時にプレビュー更新
+    qualitySlider.addEventListener('change', () => {
+        if (selectedFiles.length > 0) {
+            updatePreview();
+        }
+    });
+    
+    // 長辺サイズ変更時にプレビュー更新
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        const originalClick = btn.onclick;
+        btn.addEventListener('click', () => {
+            if (selectedFiles.length > 0) {
+                setTimeout(updatePreview, 100);
+            }
+        });
+    });
+    
+    customSize.addEventListener('change', () => {
+        if (selectedFiles.length > 0) {
+            updatePreview();
+        }
+    });
+
+
 });
 
 // ファイル選択処理
@@ -136,6 +166,9 @@ function handleFileSelect(e) {
     fileCount.textContent = validFiles.length;
     totalSize.textContent = totalMB.toFixed(2);
     processBtn.disabled = false;
+
+    updatePreview();
+
 }
 
 // 画像処理メイン
@@ -326,4 +359,136 @@ function resetAll() {
 function resetProgress() {
     progressContainer.style.display = 'none';
     processBtn.disabled = false;
+}
+
+// プレビュー更新関数
+async function updatePreview() {
+    if (selectedFiles.length === 0) return;
+    
+    const previewSection = document.getElementById('previewSection');
+    const previewTableBody = document.getElementById('previewTableBody');
+    const beforeTotal = document.getElementById('beforeTotal');
+    const afterTotal = document.getElementById('afterTotal');
+    const reductionRate = document.getElementById('reductionRate');
+    const updatePreviewBtn = document.getElementById('updatePreviewBtn');
+    
+    // ボタンを無効化
+    updatePreviewBtn.disabled = true;
+    updatePreviewBtn.textContent = '⏳ 計算中...';
+    
+    const format = document.querySelector('input[name="format"]:checked').value;
+    const quality = parseFloat(qualitySlider.value);
+    const noUpscale = document.getElementById('noUpscale').checked;
+    
+    let totalBefore = 0;
+    let totalAfter = 0;
+    previewData = [];
+    
+    // 各ファイルのサイズを予測
+    for (const file of selectedFiles) {
+        const beforeSize = file.size;
+        totalBefore += beforeSize;
+        
+        try {
+            const afterSize = await estimateFileSize(file, currentSize, format, quality, noUpscale);
+            totalAfter += afterSize;
+            
+            const reduction = ((beforeSize - afterSize) / beforeSize * 100).toFixed(1);
+            
+            previewData.push({
+                name: file.name,
+                beforeSize: beforeSize,
+                afterSize: afterSize,
+                reduction: reduction
+            });
+        } catch (error) {
+            console.error('プレビュー計算エラー:', file.name, error);
+        }
+    }
+    
+    // テーブル更新
+    previewTableBody.innerHTML = previewData.map(item => `
+        <tr>
+            <td class="file-name" title="${item.name}">${item.name}</td>
+            <td class="size-before">${formatBytes(item.beforeSize)}</td>
+            <td class="size-after">${formatBytes(item.afterSize)}</td>
+            <td class="reduction ${item.reduction < 0 ? 'negative' : ''}">${item.reduction}%</td>
+        </tr>
+    `).join('');
+    
+    // サマリー更新
+    beforeTotal.textContent = formatBytes(totalBefore);
+    afterTotal.textContent = formatBytes(totalAfter);
+    const totalReduction = ((totalBefore - totalAfter) / totalBefore * 100).toFixed(1);
+    reductionRate.textContent = `${totalReduction}%`;
+    
+    // プレビューセクションを表示
+    previewSection.style.display = 'block';
+    
+    // ボタンを再有効化
+    updatePreviewBtn.disabled = false;
+    updatePreviewBtn.textContent = '🔄 プレビューを更新';
+}
+
+// ファイルサイズ推定関数
+async function estimateFileSize(file, targetSize, format, quality, noUpscale) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            img.onload = () => {
+                try {
+                    let { width, height } = img;
+                    const maxDim = Math.max(width, height);
+                    
+                    // 拡大禁止チェック
+                    if (noUpscale && maxDim <= targetSize) {
+                        resolve(file.size);
+                        return;
+                    }
+                    
+                    // リサイズ計算
+                    if (maxDim > targetSize) {
+                        const ratio = targetSize / maxDim;
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    
+                    // Canvas描画
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Blob生成
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            reject(new Error('Blob生成失敗'));
+                            return;
+                        }
+                        resolve(blob.size);
+                    }, format, quality);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            img.onerror = () => reject(new Error('画像読み込み失敗'));
+            img.src = e.target.result;
+        };
+        
+        reader.onerror = () => reject(new Error('ファイル読み込み失敗'));
+        reader.readAsDataURL(file);
+    });
+}
+
+// バイト数を読みやすい形式に変換
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
 }

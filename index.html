@@ -89,6 +89,46 @@
             </div>
         </section>
 
+<section class="settings-section"> の直後に以下を追加:
+
+        <!-- プレビューブロック（新規追加） -->
+        <section class="preview-section" id="previewSection" style="display: none;">
+            <h2>📊 変換後サイズのプレビュー</h2>
+            <div class="preview-summary">
+                <div class="summary-item">
+                    <span class="label">変換前合計:</span>
+                    <span class="value" id="beforeTotal">0 MB</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">変換後予測:</span>
+                    <span class="value highlight" id="afterTotal">0 MB</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">削減率:</span>
+                    <span class="value success" id="reductionRate">0%</span>
+                </div>
+            </div>
+            
+            <div class="preview-table-container">
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>ファイル名</th>
+                            <th>変換前</th>
+                            <th>変換後</th>
+                            <th>削減率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <button class="btn btn-secondary" id="updatePreviewBtn">
+                🔄 プレビューを更新
+            </button>
+        </section>
+
         <!-- 実行・進行ブロック -->
         <section class="process-section">
             <button class="btn btn-success btn-large" id="processBtn" disabled>
